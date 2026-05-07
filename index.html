@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Baccarat Analyzer Pro</title>
+
+<style>
+
+*{
+    box-sizing:border-box;
+}
+
+body{
+    margin:0;
+    padding:15px;
+    background:#0f172a;
+    font-family:Arial;
+    color:white;
+}
+
+.container{
+    width:100%;
+    max-width:600px;
+    margin:auto;
+}
+
+h2{
+    text-align:center;
+    color:#38bdf8;
+}
+
+.section{
+    background:#1e293b;
+    padding:15px;
+    border-radius:12px;
+    margin-bottom:15px;
+}
+
+.button-group{
+    display:flex;
+    gap:10px;
+    margin-bottom:10px;
+}
+
+.button-group button{
+    flex:1;
+    padding:14px;
+    border:none;
+    border-radius:10px;
+    font-size:18px;
+    font-weight:bold;
+    color:white;
+}
+
+.btnP{
+    background:#22c55e;
+}
+
+.btnB{
+    background:#ef4444;
+}
+
+.btnT{
+    background:#eab308;
+    color:black;
+}
+
+input{
+    width:100%;
+    padding:14px;
+    border:none;
+    border-radius:10px;
+    font-size:16px;
+    margin-bottom:10px;
+}
+
+.main-btn{
+    width:100%;
+    padding:14px;
+    border:none;
+    border-radius:10px;
+    background:#38bdf8;
+    color:white;
+    font-size:16px;
+    font-weight:bold;
+    margin-top:5px;
+}
+
+.clear-btn{
+    background:#475569;
+}
+
+.stats{
+    background:#020617;
+    padding:15px;
+    border-radius:10px;
+    line-height:1.8;
+    margin-top:10px;
+}
+
+.result{
+    background:#111827;
+    padding:12px;
+    border-radius:10px;
+    margin-top:10px;
+    font-size:16px;
+}
+
+.highlight{
+    font-size:22px;
+    font-weight:bold;
+    color:#38bdf8;
+}
+
+@media(max-width:480px){
+
+    body{
+        padding:10px;
+    }
+
+    .button-group button{
+        font-size:16px;
+        padding:12px;
+    }
+
+    input{
+        font-size:15px;
+    }
+
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<h2>🎲 Baccarat Analyzer Pro</h2>
+
+<div class="section">
+
+<h3>➤ Nhập dữ liệu bảng</h3>
+
+<div class="button-group">
+    <button class="btnP" onclick="addData('P')">Player</button>
+    <button class="btnB" onclick="addData('B')">Banker</button>
+    <button class="btnT" onclick="addData('T')">Tie</button>
+</div>
+
+<input id="dataInput" placeholder="Dữ liệu bảng...">
+
+<button class="main-btn" onclick="saveData()">💾 Lưu bảng</button>
+<button class="main-btn clear-btn" onclick="clearDataInput()">🗑 Xóa nhập</button>
+
+</div>
+
+<div class="section">
+
+<h3>➤ Nhập pattern tìm kiếm</h3>
+
+<div class="button-group">
+    <button class="btnP" onclick="addPattern('P')">P</button>
+    <button class="btnB" onclick="addPattern('B')">B</button>
+    <button class="btnT" onclick="addPattern('T')">T</button>
+</div>
+
+<input id="patternInput" placeholder="Pattern tìm kiếm...">
+
+<button class="main-btn" onclick="search()">🔍 Tìm kiếm</button>
+<button class="main-btn clear-btn" onclick="clearPatternInput()">🗑 Xóa pattern</button>
+
+<div id="stats" class="stats"></div>
+
+<div id="output"></div>
+
+</div>
+
+</div>
+
+<script>
+
+function getData(){
+    return JSON.parse(localStorage.getItem("baccaratData") || "[]");
+}
+
+function saveData(){
+
+    let input=document.getElementById("dataInput").value.trim();
+
+    if(!input){
+        alert("Nhập dữ liệu!");
+        return;
+    }
+
+    let arr=input.split(",").map(x=>x.trim());
+
+    let data=getData();
+
+    data.push(arr);
+
+    localStorage.setItem("baccaratData",JSON.stringify(data));
+
+    alert("Đã lưu bảng!");
+
+}
+
+function addData(val){
+
+    let input=document.getElementById("dataInput");
+
+    input.value += (input.value ? "," : "") + val;
+
+}
+
+function addPattern(val){
+
+    let input=document.getElementById("patternInput");
+
+    input.value += (input.value ? "," : "") + val;
+
+}
+
+function clearDataInput(){
+
+    document.getElementById("dataInput").value="";
+
+}
+
+function clearPatternInput(){
+
+    document.getElementById("patternInput").value="";
+
+}
+
+function search(){
+
+    let pattern=document.getElementById("patternInput")
+    .value
+    .split(",");
+
+    let data=getData();
+
+    let count={
+        P:0,
+        B:0,
+        T:0
+    };
+
+    let total=0;
+
+    let output=document.getElementById("output");
+
+    let stats=document.getElementById("stats");
+
+    output.innerHTML="";
+
+    data.forEach(table=>{
+
+        for(let i=0;i<=table.length-pattern.length;i++){
+
+            let match=true;
+
+            for(let j=0;j<pattern.length;j++){
+
+                if(table[i+j]!==pattern[j]){
+
+                    match=false;
+                    break;
+
+                }
+
+            }
+
+            if(match){
+
+                let next=table[i+pattern.length];
+
+                if(next){
+
+                    count[next]++;
+                    total++;
+
+                }
+
+            }
+
+        }
+
+    });
+
+    if(total===0){
+
+        stats.innerHTML="❌ Không tìm thấy dữ liệu phù hợp";
+        return;
+
+    }
+
+    let pRate=((count.P/total)*100).toFixed(1);
+
+    let bRate=((count.B/total)*100).toFixed(1);
+
+    let tRate=((count.T/total)*100).toFixed(1);
+
+    let suggestion="Không rõ";
+
+    if(count.P>count.B && count.P>count.T){
+
+        suggestion="PLAYER (P)";
+
+    }
+
+    else if(count.B>count.P && count.B>count.T){
+
+        suggestion="BANKER (B)";
+
+    }
+
+    else if(count.T>count.P && count.T>count.B){
+
+        suggestion="TIE (T)";
+
+    }
+
+    stats.innerHTML=`
+
+        📊 Tổng mẫu tìm thấy: ${total}<br><br>
+
+        Player (P): ${pRate}%<br>
+        Banker (B): ${bRate}%<br>
+        Tie (T): ${tRate}%<br><br>
+
+        🎯 Gợi ý đánh:<br>
+        <div class="highlight">${suggestion}</div>
+
+    `;
+
+}
+
+</script>
+
+</body>
+</html>
