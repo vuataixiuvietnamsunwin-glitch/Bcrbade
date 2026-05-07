@@ -4,7 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Baccarat Analyzer Pro</title>
+<title>Baccarat Analyzer Pro AI</title>
+
+<script async
+src="https://docs.opencv.org/4.x/opencv.js">
+</script>
 
 <style>
 
@@ -22,7 +26,7 @@ body{
 
 .container{
     width:100%;
-    max-width:600px;
+    max-width:700px;
     margin:auto;
 }
 
@@ -106,12 +110,34 @@ input{
     border-radius:10px;
     margin-top:10px;
     font-size:16px;
+    line-height:1.8;
+    word-break:break-all;
 }
 
 .highlight{
     font-size:22px;
     font-weight:bold;
     color:#38bdf8;
+}
+
+.previewWrap{
+    position:relative;
+    margin-top:10px;
+}
+
+#preview{
+    width:100%;
+    border-radius:12px;
+    display:block;
+}
+
+#overlay{
+    position:absolute;
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
+    pointer-events:none;
 }
 
 @media(max-width:480px){
@@ -138,7 +164,41 @@ input{
 
 <div class="container">
 
-<h2>🎲 Baccarat Analyzer Pro</h2>
+<h2>🎲 Baccarat Analyzer Pro AI</h2>
+
+<div class="section">
+
+<h3>📸 AI Detect Roadmap</h3>
+
+<input
+type="file"
+id="imageInput"
+accept="image/*">
+
+<div class="previewWrap">
+
+<img id="preview">
+
+<canvas id="overlay"></canvas>
+
+</div>
+
+<button class="main-btn"
+onclick="detectRoadmap()">
+
+🤖 Detect ảnh roadmap
+
+</button>
+
+<div
+id="detectResult"
+class="result">
+
+Chưa detect
+
+</div>
+
+</div>
 
 <div class="section">
 
@@ -153,7 +213,13 @@ input{
 <input id="dataInput" placeholder="Dữ liệu bảng...">
 
 <button class="main-btn" onclick="saveData()">💾 Lưu bảng</button>
-<button class="main-btn clear-btn" onclick="clearDataInput()">🗑 Xóa nhập</button>
+
+<button class="main-btn clear-btn"
+onclick="clearDataInput()">
+
+🗑 Xóa nhập
+
+</button>
 
 </div>
 
@@ -167,12 +233,27 @@ input{
     <button class="btnT" onclick="addPattern('T')">T</button>
 </div>
 
-<input id="patternInput" placeholder="Pattern tìm kiếm...">
+<input id="patternInput"
+placeholder="Pattern tìm kiếm...">
 
-<button class="main-btn" onclick="search()">🔍 Tìm kiếm</button>
-<button class="main-btn clear-btn" onclick="clearPatternInput()">🗑 Xóa pattern</button>
+<button class="main-btn"
+onclick="search()">
 
-<div id="stats" class="stats"></div>
+🔍 Tìm kiếm
+
+</button>
+
+<button class="main-btn clear-btn"
+onclick="clearPatternInput()">
+
+🗑 Xóa pattern
+
+</button>
+
+<div id="stats"
+class="stats">
+
+</div>
 
 <div id="output"></div>
 
@@ -180,28 +261,603 @@ input{
 
 </div>
 
+<canvas id="hiddenCanvas"
+style="display:none;">
+</canvas>
+
 <script>
 
+const preview =
+document.getElementById("preview");
+
+const overlay =
+document.getElementById("overlay");
+
+const overlayCtx =
+overlay.getContext("2d");
+
+const hiddenCanvas =
+document.getElementById("hiddenCanvas");
+
+const hiddenCtx =
+hiddenCanvas.getContext("2d");
+
+document
+.getElementById("imageInput")
+.addEventListener(
+"change",
+function(e){
+
+    const file=e.target.files[0];
+
+    if(!file) return;
+
+    const reader=
+    new FileReader();
+
+    reader.onload=function(ev){
+
+        preview.src=
+        ev.target.result;
+
+    };
+
+    reader.readAsDataURL(file);
+
+});
+
+function detectRoadmap(){
+
+    if(typeof cv==="undefined"){
+
+        alert(
+        "OpenCV chưa load xong"
+        );
+
+        return;
+
+    }
+
+    hiddenCanvas.width =
+    preview.naturalWidth;
+
+    hiddenCanvas.height =
+    preview.naturalHeight;
+
+    hiddenCtx.drawImage(
+        preview,
+        0,
+        0
+    );
+
+    overlay.width =
+    preview.clientWidth;
+
+    overlay.height =
+    preview.clientHeight;
+
+    overlayCtx.clearRect(
+        0,
+        0,
+        overlay.width,
+        overlay.height
+    );
+
+    let src =
+    cv.imread(hiddenCanvas);
+
+    let hsv =
+    new cv.Mat();
+
+    cv.cvtColor(
+        src,
+        hsv,
+        cv.COLOR_RGBA2RGB
+    );
+
+    cv.cvtColor(
+        hsv,
+        hsv,
+        cv.COLOR_RGB2HSV
+    );
+
+    let maskBlue =
+    new cv.Mat();
+
+    let maskRed1 =
+    new cv.Mat();
+
+    let maskRed2 =
+    new cv.Mat();
+
+    let maskRed =
+    new cv.Mat();
+
+    let lowBlue =
+    new cv.Mat(
+        hsv.rows,
+        hsv.cols,
+        hsv.type(),
+        [90,80,80,0]
+    );
+
+    let highBlue =
+    new cv.Mat(
+        hsv.rows,
+        hsv.cols,
+        hsv.type(),
+        [140,255,255,255]
+    );
+
+    cv.inRange(
+        hsv,
+        lowBlue,
+        highBlue,
+        maskBlue
+    );
+
+    let lowRed1 =
+    new cv.Mat(
+        hsv.rows,
+        hsv.cols,
+        hsv.type(),
+        [0,80,80,0]
+    );
+
+    let highRed1 =
+    new cv.Mat(
+        hsv.rows,
+        hsv.cols,
+        hsv.type(),
+        [10,255,255,255]
+    );
+
+    let lowRed2 =
+    new cv.Mat(
+        hsv.rows,
+        hsv.cols,
+        hsv.type(),
+        [160,80,80,0]
+    );
+
+    let highRed2 =
+    new cv.Mat(
+        hsv.rows,
+        hsv.cols,
+        hsv.type(),
+        [180,255,255,255]
+    );
+
+    cv.inRange(
+        hsv,
+        lowRed1,
+        highRed1,
+        maskRed1
+    );
+
+    cv.inRange(
+        hsv,
+        lowRed2,
+        highRed2,
+        maskRed2
+    );
+
+    cv.add(
+        maskRed1,
+        maskRed2,
+        maskRed
+    );
+
+    let kernel =
+    cv.Mat.ones(
+        3,
+        3,
+        cv.CV_8U
+    );
+
+    cv.morphologyEx(
+        maskBlue,
+        maskBlue,
+        cv.MORPH_OPEN,
+        kernel
+    );
+
+    cv.morphologyEx(
+        maskRed,
+        maskRed,
+        cv.MORPH_OPEN,
+        kernel
+    );
+
+    cv.morphologyEx(
+        maskBlue,
+        maskBlue,
+        cv.MORPH_CLOSE,
+        kernel
+    );
+
+    cv.morphologyEx(
+        maskRed,
+        maskRed,
+        cv.MORPH_CLOSE,
+        kernel
+    );
+
+    let objects=[];
+
+    detectContours(
+        maskBlue,
+        "P",
+        objects
+    );
+
+    detectContours(
+        maskRed,
+        "B",
+        objects
+    );
+
+    objects =
+    removeDuplicates(objects);
+
+    clusterColumns(objects);
+
+    objects.sort((a,b)=>{
+
+        if(a.col!==b.col){
+
+            return a.col-b.col;
+
+        }
+
+        return (
+            Math.round(a.y/5)
+            -
+            Math.round(b.y/5)
+        );
+
+    });
+
+    let result=[];
+
+    objects.forEach(o=>{
+
+        result.push(o.type);
+
+        if(o.tie){
+
+            result.push("T");
+
+        }
+
+    });
+
+    renderOverlay(objects);
+
+    document
+    .getElementById("detectResult")
+    .innerHTML =
+    result.join(",");
+
+    document
+    .getElementById("dataInput")
+    .value =
+    result.join(",");
+
+    src.delete();
+    hsv.delete();
+    maskBlue.delete();
+    maskRed.delete();
+    maskRed1.delete();
+    maskRed2.delete();
+    kernel.delete();
+
+}
+
+function detectContours(
+    mask,
+    type,
+    objects
+){
+
+    let contours =
+    new cv.MatVector();
+
+    let hierarchy =
+    new cv.Mat();
+
+    cv.findContours(
+        mask,
+        contours,
+        hierarchy,
+        cv.RETR_EXTERNAL,
+        cv.CHAIN_APPROX_SIMPLE
+    );
+
+    for(let i=0;i<contours.size();i++){
+
+        let cnt=
+        contours.get(i);
+
+        let rect=
+        cv.boundingRect(cnt);
+
+        const ratio=
+        rect.width/rect.height;
+
+        if(
+            ratio<0.6 ||
+            ratio>1.4
+        ) continue;
+
+        const area=
+        cv.contourArea(cnt);
+
+        if(area<80) continue;
+
+        if(
+            rect.width < 12 ||
+            rect.height < 12
+        ) continue;
+
+        if(
+            rect.width > 80 ||
+            rect.height > 80
+        ) continue;
+
+        const cx =
+        rect.x + rect.width/2;
+
+        const cy =
+        rect.y + rect.height/2;
+
+        const tie =
+        detectTieSlash(
+            cx,
+            cy
+        );
+
+        objects.push({
+
+            x:cx,
+            y:cy,
+            type:type,
+            tie:tie
+
+        });
+
+    }
+
+    contours.delete();
+    hierarchy.delete();
+
+}
+
+function detectTieSlash(cx,cy){
+
+    const img =
+    hiddenCtx.getImageData(
+        cx-14,
+        cy-14,
+        28,
+        28
+    );
+
+    let green=0;
+
+    for(let i=0;i<img.data.length;i+=4){
+
+        const r=img.data[i];
+        const g=img.data[i+1];
+        const b=img.data[i+2];
+
+        if(
+            g>120 &&
+            r<150 &&
+            b<150
+        ){
+
+            green++;
+
+        }
+
+    }
+
+    return green>35;
+
+}
+
+function removeDuplicates(objects){
+
+    let filtered=[];
+
+    objects.forEach(o=>{
+
+        let found=false;
+
+        filtered.forEach(f=>{
+
+            const dx=o.x-f.x;
+            const dy=o.y-f.y;
+
+            const dist=
+            Math.sqrt(dx*dx+dy*dy);
+
+            if(dist<18){
+
+                found=true;
+
+            }
+
+        });
+
+        if(!found){
+
+            filtered.push(o);
+
+        }
+
+    });
+
+    return filtered;
+
+}
+
+function clusterColumns(objects){
+
+    objects.sort((a,b)=>a.x-b.x);
+
+    let groups=[];
+
+    objects.forEach(o=>{
+
+        let added=false;
+
+        groups.forEach(g=>{
+
+            if(
+                Math.abs(
+                    o.x-g.avgX
+                ) < 22
+            ){
+
+                g.items.push(o);
+
+                g.avgX=
+                g.items.reduce(
+                    (s,v)=>s+v.x,
+                    0
+                ) / g.items.length;
+
+                added=true;
+
+            }
+
+        });
+
+        if(!added){
+
+            groups.push({
+
+                avgX:o.x,
+                items:[o]
+
+            });
+
+        }
+
+    });
+
+    groups.sort((a,b)=>
+        a.avgX-b.avgX
+    );
+
+    groups.forEach((g,i)=>{
+
+        g.items.forEach(o=>{
+
+            o.col=i;
+
+        });
+
+    });
+
+}
+
+function renderOverlay(objects){
+
+    const scaleX =
+    overlay.width /
+    hiddenCanvas.width;
+
+    const scaleY =
+    overlay.height /
+    hiddenCanvas.height;
+
+    objects.forEach(o=>{
+
+        overlayCtx.beginPath();
+
+        overlayCtx.arc(
+            o.x*scaleX,
+            o.y*scaleY,
+            18,
+            0,
+            Math.PI*2
+        );
+
+        overlayCtx.lineWidth=3;
+
+        overlayCtx.strokeStyle=
+        o.type==="P"
+        ? "#22c55e"
+        : "#ef4444";
+
+        overlayCtx.stroke();
+
+        overlayCtx.fillStyle=
+        "yellow";
+
+        overlayCtx.font=
+        "bold 14px Arial";
+
+        let txt=o.type;
+
+        if(o.tie){
+
+            txt+="+T";
+
+        }
+
+        overlayCtx.fillText(
+            txt,
+            o.x*scaleX-10,
+            o.y*scaleY-22
+        );
+
+    });
+
+}
+
 function getData(){
-    return JSON.parse(localStorage.getItem("baccaratData") || "[]");
+
+    return JSON.parse(
+        localStorage.getItem(
+            "baccaratData"
+        ) || "[]"
+    );
+
 }
 
 function saveData(){
 
-    let input=document.getElementById("dataInput").value.trim();
+    let input=
+    document
+    .getElementById(
+        "dataInput"
+    )
+    .value
+    .trim();
 
     if(!input){
+
         alert("Nhập dữ liệu!");
         return;
+
     }
 
-    let arr=input.split(",").map(x=>x.trim());
+    let arr=input
+    .split(",")
+    .map(x=>x.trim());
 
     let data=getData();
 
     data.push(arr);
 
-    localStorage.setItem("baccaratData",JSON.stringify(data));
+    localStorage.setItem(
+        "baccaratData",
+        JSON.stringify(data)
+    );
 
     alert("Đã lưu bảng!");
 
@@ -209,35 +865,57 @@ function saveData(){
 
 function addData(val){
 
-    let input=document.getElementById("dataInput");
+    let input=
+    document
+    .getElementById(
+        "dataInput"
+    );
 
-    input.value += (input.value ? "," : "") + val;
+    input.value +=
+    (input.value ? "," : "")
+    + val;
 
 }
 
 function addPattern(val){
 
-    let input=document.getElementById("patternInput");
+    let input=
+    document
+    .getElementById(
+        "patternInput"
+    );
 
-    input.value += (input.value ? "," : "") + val;
+    input.value +=
+    (input.value ? "," : "")
+    + val;
 
 }
 
 function clearDataInput(){
 
-    document.getElementById("dataInput").value="";
+    document
+    .getElementById(
+        "dataInput"
+    ).value="";
 
 }
 
 function clearPatternInput(){
 
-    document.getElementById("patternInput").value="";
+    document
+    .getElementById(
+        "patternInput"
+    ).value="";
 
 }
 
 function search(){
 
-    let pattern=document.getElementById("patternInput")
+    let pattern=
+    document
+    .getElementById(
+        "patternInput"
+    )
     .value
     .split(",");
 
@@ -251,21 +929,40 @@ function search(){
 
     let total=0;
 
-    let output=document.getElementById("output");
+    let output=
+    document
+    .getElementById(
+        "output"
+    );
 
-    let stats=document.getElementById("stats");
+    let stats=
+    document
+    .getElementById(
+        "stats"
+    );
 
     output.innerHTML="";
 
     data.forEach(table=>{
 
-        for(let i=0;i<=table.length-pattern.length;i++){
+        for(
+            let i=0;
+            i<=table.length-pattern.length;
+            i++
+        ){
 
             let match=true;
 
-            for(let j=0;j<pattern.length;j++){
+            for(
+                let j=0;
+                j<pattern.length;
+                j++
+            ){
 
-                if(table[i+j]!==pattern[j]){
+                if(
+                    table[i+j]
+                    !==pattern[j]
+                ){
 
                     match=false;
                     break;
@@ -276,7 +973,8 @@ function search(){
 
             if(match){
 
-                let next=table[i+pattern.length];
+                let next=
+                table[i+pattern.length];
 
                 if(next){
 
@@ -293,32 +991,49 @@ function search(){
 
     if(total===0){
 
-        stats.innerHTML="❌ Không tìm thấy dữ liệu phù hợp";
+        stats.innerHTML=
+        "❌ Không tìm thấy dữ liệu phù hợp";
+
         return;
 
     }
 
-    let pRate=((count.P/total)*100).toFixed(1);
+    let pRate=
+    ((count.P/total)*100)
+    .toFixed(1);
 
-    let bRate=((count.B/total)*100).toFixed(1);
+    let bRate=
+    ((count.B/total)*100)
+    .toFixed(1);
 
-    let tRate=((count.T/total)*100).toFixed(1);
+    let tRate=
+    ((count.T/total)*100)
+    .toFixed(1);
 
     let suggestion="Không rõ";
 
-    if(count.P>count.B && count.P>count.T){
+    if(
+        count.P>count.B &&
+        count.P>count.T
+    ){
 
         suggestion="PLAYER (P)";
 
     }
 
-    else if(count.B>count.P && count.B>count.T){
+    else if(
+        count.B>count.P &&
+        count.B>count.T
+    ){
 
         suggestion="BANKER (B)";
 
     }
 
-    else if(count.T>count.P && count.T>count.B){
+    else if(
+        count.T>count.P &&
+        count.T>count.B
+    ){
 
         suggestion="TIE (T)";
 
@@ -326,14 +1041,35 @@ function search(){
 
     stats.innerHTML=`
 
-        📊 Tổng mẫu tìm thấy: ${total}<br><br>
+        📊 Tổng mẫu tìm thấy:
+        ${total}
 
-        Player (P): ${pRate}%<br>
-        Banker (B): ${bRate}%<br>
-        Tie (T): ${tRate}%<br><br>
+        <br><br>
 
-        🎯 Gợi ý đánh:<br>
-        <div class="highlight">${suggestion}</div>
+        Player (P):
+        ${pRate}%
+
+        <br>
+
+        Banker (B):
+        ${bRate}%
+
+        <br>
+
+        Tie (T):
+        ${tRate}%
+
+        <br><br>
+
+        🎯 Gợi ý đánh:
+
+        <br>
+
+        <div class="highlight">
+
+        ${suggestion}
+
+        </div>
 
     `;
 
